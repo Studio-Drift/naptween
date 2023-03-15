@@ -1,0 +1,16 @@
+{
+    "Type": "nap::ProjectInfo", 
+    "mID": "ProjectInfo", 
+    "Title": "Tween", 
+    "Version": "1.0.0", 
+    "RequiredModules": [
+        "napapp",
+        "naprender",
+        "napimgui", 
+        "napcameracontrol",
+		"naptween"
+    ], 
+    "Data": "data/tween.json", 
+    "ServiceConfig": "", 
+    "PathMapping": "cache/path_mapping.json"
+}

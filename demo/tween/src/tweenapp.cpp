@@ -168,7 +168,13 @@ namespace nap
 		glm::vec3 sphere_position = math::extractPosition(sphere_transform.getGlobalTransform());
 
 		// create a tween and store the handle
-		mMovementTweenHandle = mTweenService->createTween<glm::vec3>(sphere_position, pos, mTweenDuration, (ETweenEaseType)mCurrentTweenType, (ETweenMode)mCurrentTweenMode);
+        utility::ErrorState tween_error;
+		mMovementTweenHandle = mTweenService->createTween<glm::vec3>(sphere_position, pos, mTweenDuration, tween_error, (ETweenEaseType)mCurrentTweenType, (ETweenMode)mCurrentTweenMode);
+        if(tween_error.hasErrors())
+        {
+            nap::Logger::error("TweenApp::createTween: %s", tween_error.toString().c_str());
+            return;
+        }
 
 		// get reference to tween from tween handle
 		Tween<glm::vec3>& movement_tween = mMovementTweenHandle->getTween();
@@ -181,7 +187,13 @@ namespace nap
 
 		// animate the animation intensity uniform of the plane
 		mAnimationIntensity 	= 0.0f;
-		mAnimationTweenHandle	= mTweenService->createTween<float>(0.0f, 1.0f, 0.5f, ETweenEaseType::CIRC_OUT);
+		mAnimationTweenHandle	= mTweenService->createTween<float>(0.0f, 1.0f, 0.5f, tween_error, ETweenEaseType::CIRC_OUT);
+        if(tween_error.hasErrors())
+        {
+            nap::Logger::error("TweenApp::createTween: %s", tween_error.toString().c_str());
+            return;
+        }
+
 		mAnimationTweenHandle->getTween().UpdateSignal.connect([this](const float& value)
 		{
 			mAnimationIntensity = value;

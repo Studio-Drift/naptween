@@ -45,10 +45,11 @@ namespace nap
 		/**
 		 * creates a Tween, service retains unique_ptr to tween and returns a TweenHandle that enables the user to have access to the Tweens functionality outside the TweenService
 		 * Once the handle is deconstructed, it will notify the service that the Tween can be deleted. The tween will then be deleted during the update loop but outside the scope of any Update, Complete or Killed signals
+		 * Return nullptr upon failure in that case error contains error message
 		 * @tparam T the value type to tween
 		 */
 		template<typename T>
-		std::unique_ptr<TweenHandle<T>> createTween(T startValue, T endValue, float duration, ETweenEaseType easeType = ETweenEaseType::LINEAR, ETweenMode mode = ETweenMode::NORMAL);
+		std::unique_ptr<TweenHandle<T>> createTween(T startValue, T endValue, float duration, utility::ErrorState& error, ETweenEaseType easeType = ETweenEaseType::LINEAR, ETweenMode mode = ETweenMode::NORMAL);
 	protected:
 
 		/**
@@ -93,8 +94,11 @@ namespace nap
 	//////////////////////////////////////////////////////////////////////////
 
 	template<typename T>
-	std::unique_ptr<TweenHandle<T>> TweenService::createTween(T startValue, T endValue, float duration, ETweenEaseType easeType, ETweenMode mode)
+	std::unique_ptr<TweenHandle<T>> TweenService::createTween(T startValue, T endValue, float duration, utility::ErrorState& error, ETweenEaseType easeType, ETweenMode mode)
 	{
+        if(!error.check(duration > 0.0f, "Tween duration must be greater than 0.0f"))
+            return nullptr;
+
 		// construct tween
 		std::unique_ptr<Tween<T>> tween = std::make_unique<Tween<T>>(startValue, endValue, duration);
 		tween->setEase(easeType);

@@ -27,8 +27,7 @@ namespace nap
 
 	TweenService::TweenService(ServiceConfiguration* configuration) :
 		Service(configuration)
-	{
-	}
+	{ }
 
 
 	TweenService::~TweenService()
@@ -46,56 +45,55 @@ namespace nap
 
 	bool TweenService::init(nap::utility::ErrorState& errorState)
 	{
+        mMainThreadId = std::this_thread::get_id();
+
 		return true;
 	}
 
 
 	void TweenService::update(double deltaTime)
 	{
-		// update tweens
-		auto itr = mTweens.begin();
-		while (itr!=mTweens.end())
-		{
-			(*itr)->update(deltaTime);
-			++itr;
-		}
-
 		// remove any killed tweens
-		std::vector<TweenBase*> tweens_to_remove;
-		mTweensToRemove.swap(tweens_to_remove);
-		for(auto* tween : tweens_to_remove)
-		{
-			itr = mTweens.begin();
-			while (itr!=mTweens.end())
-			{
-				if(itr->get() == tween)
-				{
-					if( !tween->mComplete )
-					{
-						tween->mKilled = true;
-						tween->KilledSignal();
-					}
+        TweenBase* tween = nullptr;
+        while(mTweensToRemove.try_dequeue(tween))
+        {
+            auto itr = mTweens.begin();
+            while (itr!=mTweens.end())
+            {
+                if(itr->get() == tween)
+                {
+                    if(!tween->mComplete)
+                    {
+                        tween->KilledSignal();
+                    }
 
-					mTweens.erase(itr);
-					break;
-				}else
-				{
-					++itr;
-				}
-			}
-		}
+                    mTweens.erase(itr);
+                    break;
+                }else
+                {
+                    ++itr;
+                }
+            }
+        }
+
+        // update tweens
+        auto itr = mTweens.begin();
+        while (itr!=mTweens.end())
+        {
+            (*itr)->update(deltaTime);
+            ++itr;
+        }
 	}
 
 
 	void TweenService::shutdown()
 	{
-		mTweensToRemove.clear();
-		mTweens.clear();
+        mTweens.clear();
 	}
 
 
 	void TweenService::removeTween(TweenBase* tween)
 	{
-		mTweensToRemove.emplace_back(tween);
+        mTweensToRemove.enqueue(tween);
 	}
 }

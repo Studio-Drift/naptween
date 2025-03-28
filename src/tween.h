@@ -51,9 +51,6 @@ namespace nap
 		 */
 		Signal<> KilledSignal;
 	protected:
-		// killed boolean
-		bool 	mKilled = false;
-
 		// complete boolean
 		bool 	mComplete = false;
 	};
@@ -70,7 +67,7 @@ namespace nap
 	 * @tparam T the type of value that you would like to tween
 	 */
 	template<typename T>
-	class Tween : public TweenBase
+	class NAPAPI Tween : public TweenBase
 	{
 	public:
 		/**
@@ -91,25 +88,59 @@ namespace nap
 		 * set easing method used for tweening
 		 * @param easing the easing method
 		 */
-		void setEase(ETweenEaseType easing);
+        Tween<T>& setEase(ETweenEaseType easing);
+
+        /**
+         * set delay for tween
+         * @param delay the delay in seconds
+         */
+        Tween<T>& setDelay(float delay);
 
 		/**
 		 * sets the tween mode for this tween, see ETweenMode enum
 		 * @param mode
 		 */
-		void setMode(ETweenMode mode);
+        Tween<T>& setMode(ETweenMode mode);
 
 		/**
 		 * set the duration for this tween
 		 * also changes mTime of this tween, to ensure smooth tweening
 		 * asserts when duration < 0.0f
 		 */
-		void setDuration(float duration);
+        Tween<T>& setDuration(float duration);
 
 		/**
 		 * restart the tween
 		 */
-		void restart();
+        Tween<T>& restart();
+
+        /**
+         * add a callback that will be called when the tween is updated
+         * @param callback the callback function
+         * @return reference to this tween
+         */
+        Tween<T>& addUpdateCallback(std::function<void(const T&)> callback);
+
+        /**
+         * add a callback that will be called when the tween is updated
+         * @param callback the callback function
+         * @return reference to this tween
+         */
+        Tween<T>& addUpdateCallback(Slot<const T&>& callback);
+
+        /**
+         * add a callback that will be called when the tween is completed
+         * @param callback the callback function
+         * @return reference to this tween
+         */
+        Tween<T>& addCompleteCallback(std::function<void(const T&)> callback);
+
+        /**
+         * add a callback that will be called when the tween is completed
+         * @param callback the callback function
+         * @return reference to this tween
+         */
+        Tween<T>& addCompleteCallback(Slot<const T&>& callback);
 
 		/**
 		 * @return current tween mode
@@ -145,21 +176,20 @@ namespace nap
 		 * @return end value
 		 */
 		const T& getEndValue() const { return mEnd; }
-	public:
-		// Signals
-
-		/**
-		 * Update signal dispatched on value update
-		 * Occurs on main thread
-		 */
-		Signal<const T&> UpdateSignal;
-
-		/**
-		 * Complete signal dispatched when tween is finished
-		 * Always dispatched on main thread
-		 */
-		Signal<const T&> CompleteSignal;
 	private:
+        // Signals
+
+        /**
+         * Update signal dispatched on value update
+         * Occurs on main thread
+         */
+        Signal<const T&> UpdateSignal;
+
+        /**
+         * Complete signal dispatched when tween is finished
+         * Always dispatched on main thread
+         */
+        Signal<const T&> CompleteSignal;
 
 		/**
 		 * unique ptr to current easing method
@@ -182,6 +212,9 @@ namespace nap
 
 		// current value
 		T 				mCurrentValue;
+
+        // delay
+        float           mDelay = 0.0f;
 
 		// duration
 		float 			mDuration;
@@ -214,9 +247,7 @@ namespace nap
 		setMode(ETweenMode::NORMAL);
 
 		// when this tween is killed, update function doesn't do anything anymore
-		KilledSignal.connect([this] {
-			mUpdateFunc = [this](double deltaTime) {};
-			});
+		KilledSignal.connect([&] { mUpdateFunc = [](double deltaTime) {}; });
 	}
 
 	template<typename T>
@@ -225,28 +256,52 @@ namespace nap
 		mUpdateFunc(deltaTime);
 	}
 
+    template<typename T>
+    Tween<T>& Tween<T>::addUpdateCallback(std::function<void(const T&)> callback)
+    {
+        UpdateSignal.connect(callback);
+        return *this;
+    }
+
+    template<typename T>
+    Tween<T>& Tween<T>::addUpdateCallback(Slot<const T&>& slot)
+    {
+        UpdateSignal.connect(slot);
+        return *this;
+    }
+
+    template<typename T>
+    Tween<T>& Tween<T>::addCompleteCallback(std::function<void(const T&)> callback)
+    {
+        CompleteSignal.connect(callback);
+        return *this;
+    }
+
+    template<typename T>
+    Tween<T>& Tween<T>::addCompleteCallback(Slot<const T&>& slot)
+    {
+        CompleteSignal.connect(slot);
+        return *this;
+    }
+
 	template<typename T>
-	void Tween<T>::setDuration(float duration)
+    Tween<T>& Tween<T>::setDuration(float duration)
 	{
-		assert(duration >= 0.0f); // invalid duration
+		if (duration < 0.0f)
+        {
+            nap::Logger::error("Tween: Duration cannot be negative, setting duration to 0.001f");
+            duration = 0.001f;
+        }
 
 		// when duration is bigger then 0, scale time accordingly to ensure smooth transition
-		if (duration > 0.0f)
-		{
-			float current_progress = mTime / mDuration;
-			mDuration = duration;
-			mTime = mDuration * current_progress;
-		}
-		else
-		{
-			// when duration is 0, it doesn't matter since we will hit complete in next update
-			mDuration = duration;
-			mTime = 0.0f;
-		}
+        float current_progress = mTime / mDuration;
+        mDuration = duration;
+        mTime = mDuration * current_progress;
+        return *this;
 	}
 
 	template<typename T>
-	void Tween<T>::setMode(ETweenMode mode)
+	Tween<T>& Tween<T>::setMode(ETweenMode mode)
 	{
 		mMode = mode;
 
@@ -262,19 +317,23 @@ namespace nap
 				{
 					mTime += deltaTime;
 
-					if (mTime >= mDuration)
+                    if(mTime < mDelay)
+                        return;
+
+                    double time = mTime - mDelay;
+					if (time >= mDuration)
 					{
-						mTime = mDuration;
+                        time = mDuration;
 						mComplete = true;
 
-						mCurrentValue = mEase->evaluate(mStart, mEnd, mTime / mDuration);
+						mCurrentValue = mEase->evaluate(mStart, mEnd, time / mDuration);
 
 						UpdateSignal.trigger(mCurrentValue);
 						CompleteSignal.trigger(mCurrentValue);
 					}
 					else
 					{
-						mCurrentValue = mEase->evaluate(mStart, mEnd, mTime / mDuration);
+						mCurrentValue = mEase->evaluate(mStart, mEnd, time / mDuration);
 						UpdateSignal.trigger(mCurrentValue);
 					}
 				}
@@ -284,29 +343,34 @@ namespace nap
 		case PING_PONG:
 		{
 			float direction = 1.0f;
-			mUpdateFunc = [this, direction](double deltaTime) mutable
+            double time = 0.0f;
+			mUpdateFunc = [this, direction, time](double deltaTime) mutable
 			{
-				mTime += deltaTime * direction;
+                mTime += deltaTime;
+                if (mTime < mDelay)
+                    return;
 
-				if (mTime >= mDuration)
+                time += deltaTime * direction;
+
+				if (time >= mDuration)
 				{
-					mTime = mDuration - (mTime - mDuration);
+                    time = mDuration - (time - mDuration);
 					direction = -1.0f;
 
-					mCurrentValue = mEase->evaluate(mStart, mEnd, mTime / mDuration);
+					mCurrentValue = mEase->evaluate(mStart, mEnd, time / mDuration);
 					UpdateSignal.trigger(mCurrentValue);
 				}
-				else if (mTime <= 0.0f)
+				else if (time <= 0.0f)
 				{
-					mTime = -mTime;
+                    time = -time;
 					direction = 1.0f;
 
-					mCurrentValue = mEase->evaluate(mStart, mEnd, mTime / mDuration);
+					mCurrentValue = mEase->evaluate(mStart, mEnd, time / mDuration);
 					UpdateSignal.trigger(mCurrentValue);
 				}
 				else
 				{
-					mCurrentValue = mEase->evaluate(mStart, mEnd, mTime / mDuration);
+					mCurrentValue = mEase->evaluate(mStart, mEnd, time / mDuration);
 					UpdateSignal.trigger(mCurrentValue);
 				}
 			};
@@ -318,18 +382,22 @@ namespace nap
 			{
 				if (!mComplete)
 				{
-					mTime += deltaTime;
+                    if (mTime < mDelay)
+                        return;
 
-					if (mTime >= mDuration)
+                    double time = mTime - mDelay;
+                    time += deltaTime;
+
+					if (time >= mDuration)
 					{
-						mTime = mDuration - mTime;
+                        time = mDuration - time;
 
-						mCurrentValue = mEase->evaluate(mStart, mEnd, mTime / mDuration);
+						mCurrentValue = mEase->evaluate(mStart, mEnd, time / mDuration);
 						UpdateSignal.trigger(mCurrentValue);
 					}
 					else
 					{
-						mCurrentValue = mEase->evaluate(mStart, mEnd, mTime / mDuration);
+						mCurrentValue = mEase->evaluate(mStart, mEnd, time / mDuration);
 						UpdateSignal.trigger(mCurrentValue);
 					}
 				}
@@ -342,21 +410,24 @@ namespace nap
 			{
 				if (!mComplete)
 				{
-					mTime += deltaTime;
+                    if (mTime < mDelay)
+                        return;
 
-					if (mTime >= mDuration)
+                    double time = mTime - mDelay;
+
+					if (time >= mDuration)
 					{
 						mComplete = true;
-						mTime = mDuration;
+                        time = mDuration;
 
-						mCurrentValue = mEase->evaluate(mStart, mEnd, 1.0f - (mTime / mDuration));
+						mCurrentValue = mEase->evaluate(mStart, mEnd, 1.0f - (time / mDuration));
 
 						UpdateSignal.trigger(mCurrentValue);
 						CompleteSignal.trigger(mCurrentValue);
 					}
 					else
 					{
-						mCurrentValue = mEase->evaluate(mStart, mEnd, 1.0f - (mTime / mDuration));
+						mCurrentValue = mEase->evaluate(mStart, mEnd, 1.0f - (time / mDuration));
 						UpdateSignal.trigger(mCurrentValue);
 					}
 				}
@@ -364,20 +435,23 @@ namespace nap
 		}
 		break;
 		}
+
+        return *this;
 	}
 
 	template<typename T>
-	void Tween<T>::restart()
+    Tween<T>& Tween<T>::restart()
 	{
 		mTime = 0.0f;
 		mComplete = false;
-		mKilled = false;
 		mCurrentValue = mStart;
+        setMode(mMode);
+        return *this;
 	}
 
 
 	template<typename T>
-	void Tween<T>::setEase(ETweenEaseType easing)
+    Tween<T>& Tween<T>::setEase(ETweenEaseType easing)
 	{
 		static std::unordered_map<ETweenEaseType, std::function<std::unique_ptr<TweenEaseBase<T>>()>> ease_constructors
 		{
@@ -419,5 +493,20 @@ namespace nap
 		auto constructor_it = ease_constructors.find(easing);
 		assert(constructor_it != ease_constructors.end()); // entry not found
 		mEase = constructor_it->second();
+
+        return *this;
 	}
+
+
+    template<typename T>
+    Tween<T>& Tween<T>::setDelay(float delay)
+    {
+        if(delay < 0.0f)
+        {
+            nap::Logger::warn("Delay can't be negative, setting to 0.0f");
+            delay = 0.0f;
+        }
+        mDelay = delay;
+        return *this;
+    }
 }

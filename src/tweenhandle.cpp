@@ -9,9 +9,7 @@ namespace nap
 {
 	TweenHandleBase::TweenHandleBase(TweenService& tweenService)
 		: mService(tweenService)
-	{
-
-	}
+	{ }
 
 	TweenHandleBase::~TweenHandleBase()
 	{

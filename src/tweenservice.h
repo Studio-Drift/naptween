@@ -7,6 +7,7 @@
 // External Includes
 #include <nap/service.h>
 #include <rtti/factory.h>
+#include <concurrentqueue.h>
 
 // local includes
 #include "tweeneasing.h"
@@ -45,11 +46,14 @@ namespace nap
 		/**
 		 * creates a Tween, service retains unique_ptr to tween and returns a TweenHandle that enables the user to have access to the Tweens functionality outside the TweenService
 		 * Once the handle is deconstructed, it will notify the service that the Tween can be deleted. The tween will then be deleted during the update loop but outside the scope of any Update, Complete or Killed signals
-		 * Return nullptr upon failure in that case error contains error message
+		 * Will assert if duration is negative or when called from outside the main thread
 		 * @tparam T the value type to tween
+		 * @param startValue the start value of the tween
+		 * @param endValue the end value of the tween
+		 * @param duration the duration of the tween
 		 */
 		template<typename T>
-		std::unique_ptr<TweenHandle<T>> createTween(T startValue, T endValue, float duration, utility::ErrorState& error, ETweenEaseType easeType = ETweenEaseType::LINEAR, ETweenMode mode = ETweenMode::NORMAL);
+		std::unique_ptr<TweenHandle<T>> createTween(T startValue, T endValue, float duration);
 	protected:
 
 		/**
@@ -77,7 +81,7 @@ namespace nap
 		void shutdown() override;
 	private:
 		/**
-		 * removes a tween, called by tween handle
+		 * removes a tween, called by tween handle, thread safe
 		 * @param pointer to tween
 		 */
 		void removeTween(TweenBase* tween);
@@ -86,7 +90,10 @@ namespace nap
 		std::vector<std::unique_ptr<TweenBase>> mTweens;
 
 		// vector holding tweens that need to be removed
-		std::vector<TweenBase*> 				mTweensToRemove;
+		moodycamel::ConcurrentQueue<TweenBase*> mTweensToRemove;
+
+        // used to check if tween is created on main thread
+        std::thread::id mMainThreadId;
 	};
 
 	//////////////////////////////////////////////////////////////////////////
@@ -94,21 +101,22 @@ namespace nap
 	//////////////////////////////////////////////////////////////////////////
 
 	template<typename T>
-	std::unique_ptr<TweenHandle<T>> TweenService::createTween(T startValue, T endValue, float duration, utility::ErrorState& error, ETweenEaseType easeType, ETweenMode mode)
+	std::unique_ptr<TweenHandle<T>> TweenService::createTween(T startValue, T endValue, float duration)
 	{
-        if(!error.check(duration > 0.0f, "Tween duration must be greater than 0.0f"))
-            return nullptr;
+        // check if duration is negative
+        assert(duration > 0.0f);
+
+        // check if called from main thread
+        assert(std::this_thread::get_id() != mMainThreadId);
 
 		// construct tween
 		std::unique_ptr<Tween<T>> tween = std::make_unique<Tween<T>>(startValue, endValue, duration);
-		tween->setEase(easeType);
-		tween->setMode(mode);
 
 		// construct handle
 		std::unique_ptr<TweenHandle<T>> tween_handle = std::make_unique<TweenHandle<T>>(*this, tween.get());
 
 		// move ownership of tween
-		mTweens.emplace_back(std::move(tween));
+        mTweens.emplace_back(std::move(tween));
 
 		// return unique_ptr to handle
 		return std::move(tween_handle);

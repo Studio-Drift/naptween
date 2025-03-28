@@ -49,7 +49,7 @@ namespace nap
 	 * @tparam T the value type to tween
 	 */
 	template<typename T>
-	class TweenHandle : public TweenHandleBase
+	class NAPAPI TweenHandle : public TweenHandleBase
 	{
 	public:
 		/**

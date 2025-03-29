@@ -103,11 +103,8 @@ namespace nap
 	template<typename T>
 	std::unique_ptr<TweenHandle<T>> TweenService::createTween(T startValue, T endValue, float duration)
 	{
-        // check if duration is negative
-        assert(duration > 0.0f);
-
         // check if called from main thread
-        assert(std::this_thread::get_id() != mMainThreadId);
+        assert(std::this_thread::get_id() == mMainThreadId);
 
 		// construct tween
 		std::unique_ptr<Tween<T>> tween = std::make_unique<Tween<T>>(startValue, endValue, duration);

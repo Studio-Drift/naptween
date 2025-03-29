@@ -63,7 +63,7 @@ namespace nap
 		 * returns reference to corresponding Tween<T>
 		 * @return reference to corresponding Tween<T>
 		 */
-		Tween<T>& getTween(){ return *mTween; }
+		Tween<T>& get(){ return *mTween; }
 	private:
 		// pointer to the tween
 		Tween<T>* mTween;

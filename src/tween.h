@@ -25,6 +25,7 @@ namespace nap
 	 */
 	class NAPAPI TweenBase
 	{
+    RTTI_ENABLE()
 		// tween service can access properties of the tween
 		friend class TweenService;
 	public:
@@ -43,6 +44,25 @@ namespace nap
 		 * @param deltaTime
 		 */
 		virtual void update(double deltaTime) = 0;
+
+        /**
+         * @return true if tween is of type T
+         */
+        template<typename T>
+        bool is() const
+        {
+            return get_type().is_derived_from<T>();
+        }
+
+        /**
+         * @return reference to tween as type T, asserts if not of type T
+         */
+        template<typename T>
+        T& as()
+        {
+            assert(is<T>());
+            return static_cast<T&>(*this);
+        }
 	public:
 		// signals
 
@@ -69,6 +89,7 @@ namespace nap
 	template<typename T>
 	class NAPAPI Tween : public TweenBase
 	{
+    RTTI_ENABLE(TweenBase)
 	public:
 		/**
 		 * Constructor taking the initial start & end value of the tween, plus duration
@@ -119,28 +140,28 @@ namespace nap
          * @param callback the callback function
          * @return reference to this tween
          */
-        Tween<T>& addUpdateCallback(std::function<void(const T&)> callback);
+        Tween<T>& onUpdate(std::function<void(T)> callback);
 
         /**
-         * add a callback that will be called when the tween is updated
-         * @param callback the callback function
+         * add a slot that will be called when the tween is updated
+         * @param slot the slot to connect to
          * @return reference to this tween
          */
-        Tween<T>& addUpdateCallback(Slot<const T&>& callback);
-
-        /**
-         * add a callback that will be called when the tween is completed
-         * @param callback the callback function
-         * @return reference to this tween
-         */
-        Tween<T>& addCompleteCallback(std::function<void(const T&)> callback);
+        Tween<T>& onUpdate(Slot<T>& slot);
 
         /**
          * add a callback that will be called when the tween is completed
          * @param callback the callback function
          * @return reference to this tween
          */
-        Tween<T>& addCompleteCallback(Slot<const T&>& callback);
+        Tween<T>& onComplete(std::function<void(T)> callback);
+
+        /**
+         * add a slot that will be called when the tween is completed
+         * @param slot the slot to connect to
+         * @return reference to this tween
+         */
+        Tween<T>& onComplete(Slot<T>& slot);
 
 		/**
 		 * @return current tween mode
@@ -177,19 +198,19 @@ namespace nap
 		 */
 		const T& getEndValue() const { return mEnd; }
 	private:
-        // Signals
+        float getProgress(double time) const;
 
         /**
          * Update signal dispatched on value update
          * Occurs on main thread
          */
-        Signal<const T&> UpdateSignal;
+        Signal<T> UpdateSignal;
 
         /**
          * Complete signal dispatched when tween is finished
          * Always dispatched on main thread
          */
-        Signal<const T&> CompleteSignal;
+        Signal<T> CompleteSignal;
 
 		/**
 		 * unique ptr to current easing method
@@ -230,10 +251,10 @@ namespace nap
 	//////////////////////////////////////////////////////////////////////////
 	// Declarations
 	//////////////////////////////////////////////////////////////////////////
-	using TweenFloat = Tween<float>;
-	using TweenDouble = Tween<double>;
-	using TweenVec2 = Tween<glm::vec2>;
-	using TweenVec3 = Tween<glm::vec3>;
+	using TweenFloat    = Tween<float>;
+	using TweenDouble   = Tween<double>;
+	using TweenVec2     = Tween<glm::vec2>;
+	using TweenVec3     = Tween<glm::vec3>;
 
 
 	//////////////////////////////////////////////////////////////////////////
@@ -257,28 +278,28 @@ namespace nap
 	}
 
     template<typename T>
-    Tween<T>& Tween<T>::addUpdateCallback(std::function<void(const T&)> callback)
+    Tween<T>& Tween<T>::onUpdate(std::function<void(T)> callback)
     {
         UpdateSignal.connect(callback);
         return *this;
     }
 
     template<typename T>
-    Tween<T>& Tween<T>::addUpdateCallback(Slot<const T&>& slot)
+    Tween<T>& Tween<T>::onUpdate(Slot<T>& slot)
     {
         UpdateSignal.connect(slot);
         return *this;
     }
 
     template<typename T>
-    Tween<T>& Tween<T>::addCompleteCallback(std::function<void(const T&)> callback)
+    Tween<T>& Tween<T>::onComplete(std::function<void(T)> callback)
     {
         CompleteSignal.connect(callback);
         return *this;
     }
 
     template<typename T>
-    Tween<T>& Tween<T>::addCompleteCallback(Slot<const T&>& slot)
+    Tween<T>& Tween<T>::onComplete(Slot<T>& slot)
     {
         CompleteSignal.connect(slot);
         return *this;
@@ -299,6 +320,14 @@ namespace nap
         mTime = mDuration * current_progress;
         return *this;
 	}
+
+    template<typename T>
+    float Tween<T>::getProgress(double time) const
+    {
+        if(mDuration == 0.0f)
+            return 1.0f;
+        return time / mDuration;
+    }
 
 	template<typename T>
 	Tween<T>& Tween<T>::setMode(ETweenMode mode)
@@ -326,14 +355,14 @@ namespace nap
                         time = mDuration;
 						mComplete = true;
 
-						mCurrentValue = mEase->evaluate(mStart, mEnd, time / mDuration);
+						mCurrentValue = mEase->evaluate(mStart, mEnd, getProgress(time));
 
 						UpdateSignal.trigger(mCurrentValue);
 						CompleteSignal.trigger(mCurrentValue);
 					}
 					else
 					{
-						mCurrentValue = mEase->evaluate(mStart, mEnd, time / mDuration);
+						mCurrentValue = mEase->evaluate(mStart, mEnd, getProgress(time));
 						UpdateSignal.trigger(mCurrentValue);
 					}
 				}
@@ -357,7 +386,7 @@ namespace nap
                     time = mDuration - (time - mDuration);
 					direction = -1.0f;
 
-					mCurrentValue = mEase->evaluate(mStart, mEnd, time / mDuration);
+					mCurrentValue = mEase->evaluate(mStart, mEnd, getProgress(time));
 					UpdateSignal.trigger(mCurrentValue);
 				}
 				else if (time <= 0.0f)
@@ -365,12 +394,12 @@ namespace nap
                     time = -time;
 					direction = 1.0f;
 
-					mCurrentValue = mEase->evaluate(mStart, mEnd, time / mDuration);
+					mCurrentValue = mEase->evaluate(mStart, mEnd, getProgress(time));
 					UpdateSignal.trigger(mCurrentValue);
 				}
 				else
 				{
-					mCurrentValue = mEase->evaluate(mStart, mEnd, time / mDuration);
+					mCurrentValue = mEase->evaluate(mStart, mEnd, getProgress(time));
 					UpdateSignal.trigger(mCurrentValue);
 				}
 			};
@@ -382,24 +411,15 @@ namespace nap
 			{
 				if (!mComplete)
 				{
+                    mTime += deltaTime;
                     if (mTime < mDelay)
                         return;
 
                     double time = mTime - mDelay;
-                    time += deltaTime;
+                    time = fmod(time, mDuration);
 
-					if (time >= mDuration)
-					{
-                        time = mDuration - time;
-
-						mCurrentValue = mEase->evaluate(mStart, mEnd, time / mDuration);
-						UpdateSignal.trigger(mCurrentValue);
-					}
-					else
-					{
-						mCurrentValue = mEase->evaluate(mStart, mEnd, time / mDuration);
-						UpdateSignal.trigger(mCurrentValue);
-					}
+                    mCurrentValue = mEase->evaluate(mStart, mEnd, getProgress(time));
+                    UpdateSignal.trigger(mCurrentValue);
 				}
 			};
 		}
@@ -407,32 +427,26 @@ namespace nap
 		case REVERSE:
 		{
 			mUpdateFunc = [this](double deltaTime)
-			{
-				if (!mComplete)
-				{
+            {
+                if (!mComplete)
+                {
+                    mTime += deltaTime;
                     if (mTime < mDelay)
                         return;
 
                     double time = mTime - mDelay;
 
-					if (time >= mDuration)
-					{
-						mComplete = true;
-                        time = mDuration;
+                    mCurrentValue = mEase->evaluate(mEnd, mStart, getProgress(time));
+                    UpdateSignal.trigger(mCurrentValue);
 
-						mCurrentValue = mEase->evaluate(mStart, mEnd, 1.0f - (time / mDuration));
-
-						UpdateSignal.trigger(mCurrentValue);
-						CompleteSignal.trigger(mCurrentValue);
-					}
-					else
-					{
-						mCurrentValue = mEase->evaluate(mStart, mEnd, 1.0f - (time / mDuration));
-						UpdateSignal.trigger(mCurrentValue);
-					}
-				}
-			};
-		}
+                    if(time >= mDuration)
+                    {
+                        mComplete = true;
+                        CompleteSignal.trigger(mCurrentValue);
+                    }
+                }
+            };
+        }
 		break;
 		}
 
@@ -456,7 +470,7 @@ namespace nap
 		static std::unordered_map<ETweenEaseType, std::function<std::unique_ptr<TweenEaseBase<T>>()>> ease_constructors
 		{
 			{ETweenEaseType::LINEAR, 		[]() { return std::make_unique<TweenEaseLinear<T>>(); 		}},
-			{ETweenEaseType::CUBIC_INOUT, 	[]() { return std::make_unique<TweenEaseOutCubic<T>>(); 	}},
+			{ETweenEaseType::CUBIC_INOUT, 	[]() { return std::make_unique<TweenEaseInOutCubic<T>>(); 	}},
 			{ETweenEaseType::CUBIC_OUT, 	[]() { return std::make_unique<TweenEaseOutCubic<T>>(); 	}},
 			{ETweenEaseType::CUBIC_IN, 		[]() { return std::make_unique<TweenEaseInCubic<T>>(); 		}},
 			{ETweenEaseType::BACK_OUT, 		[]() { return std::make_unique<TweenEaseOutBack<T>>(); 		}},
@@ -509,4 +523,24 @@ namespace nap
         mDelay = delay;
         return *this;
     }
+
+    //////////////////////////////////////////////////////////////////////////
+    // RTTI
+    //////////////////////////////////////////////////////////////////////////
+
+    RTTI_BEGIN_CLASS_NO_DEFAULT_CONSTRUCTOR(nap::TweenFloat)
+        RTTI_CONSTRUCTOR(float, float, float)
+    RTTI_END_CLASS
+
+    RTTI_BEGIN_CLASS_NO_DEFAULT_CONSTRUCTOR(nap::TweenDouble)
+        RTTI_CONSTRUCTOR(double, double, float)
+    RTTI_END_CLASS
+
+    RTTI_BEGIN_CLASS_NO_DEFAULT_CONSTRUCTOR(nap::TweenVec2)
+        RTTI_CONSTRUCTOR(glm::vec2, glm::vec2, float)
+    RTTI_END_CLASS
+
+    RTTI_BEGIN_CLASS_NO_DEFAULT_CONSTRUCTOR(nap::TweenVec3)
+        RTTI_CONSTRUCTOR(glm::vec3, glm::vec3, float)
+    RTTI_END_CLASS
 }

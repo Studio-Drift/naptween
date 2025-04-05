@@ -4,12 +4,14 @@
 
 #pragma once
 
+#include <nap/core.h>
+
 namespace nap
 {
 	/**
 	 * All available tween modes (serializable)
 	 */
-	enum ETweenMode : int
+	enum NAPAPI ETweenMode : int
 	{
 		NORMAL 		= 0,
 		LOOP		= 1,

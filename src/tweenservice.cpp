@@ -18,13 +18,6 @@ RTTI_END_CLASS
 
 namespace nap
 {
-	static std::vector<std::unique_ptr<rtti::IObjectCreator>(*)(TweenService*)>& getObjectCreators()
-	{
-		static std::vector<std::unique_ptr<rtti::IObjectCreator>(*)(TweenService* service)> vector;
-		return vector;
-	}
-
-
 	TweenService::TweenService(ServiceConfiguration* configuration) :
 		Service(configuration)
 	{ }
@@ -32,15 +25,6 @@ namespace nap
 
 	TweenService::~TweenService()
 	{ }
-
-
-	void TweenService::registerObjectCreators(rtti::Factory& factory)
-	{
-		for(auto& objectCreator : getObjectCreators())
-		{
-			factory.addObjectCreator(objectCreator(this));
-		}
-	}
 
 
 	bool TweenService::init(nap::utility::ErrorState& errorState)
@@ -54,35 +38,23 @@ namespace nap
 	void TweenService::update(double deltaTime)
 	{
 		// remove any killed tweens
-        TweenBase* tween = nullptr;
-        while(mTweensToRemove.try_dequeue(tween))
+        while(!mTweensToRemove.empty())
         {
-            auto itr = mTweens.begin();
-            while (itr!=mTweens.end())
-            {
-                if(itr->get() == tween)
-                {
-                    if(!tween->mComplete)
-                    {
-                        tween->KilledSignal();
-                    }
+            auto* tween = mTweensToRemove.front();
+            mTweensToRemove.pop();
 
-                    mTweens.erase(itr);
-                    break;
-                }else
-                {
-                    ++itr;
-                }
-            }
+            // if the tween is not complete, call the killed signal
+            if(!tween->mComplete)
+                tween->KilledSignal();
+
+            // remove the tween from the vector
+            mTweens.erase(std::remove_if(mTweens.begin(), mTweens.end(),
+                                         [&tween](const std::unique_ptr<TweenBase>& t) { return t.get() == tween; }), mTweens.end());
         }
 
         // update tweens
-        auto itr = mTweens.begin();
-        while (itr!=mTweens.end())
-        {
-            (*itr)->update(deltaTime);
-            ++itr;
-        }
+        for(auto& tween : mTweens)
+            tween->update(deltaTime);
 	}
 
 
@@ -94,6 +66,8 @@ namespace nap
 
 	void TweenService::removeTween(TweenBase* tween)
 	{
-        mTweensToRemove.enqueue(tween);
+        assert(std::this_thread::get_id() == mMainThreadId); // ensure this is called from the main thread
+
+        mTweensToRemove.emplace(tween);
 	}
 }

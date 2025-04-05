@@ -14,7 +14,7 @@ namespace nap
 	/**
 	 * Every possible tween ease type (serializable)
 	 */
-	enum ETweenEaseType : int
+	enum NAPAPI ETweenEaseType : int
 	{
 		LINEAR 			= 0,
 		CUBIC_IN	  	= 1,
@@ -53,7 +53,7 @@ namespace nap
 	 * Base class for evaluation
 	 */
 	template<typename T>
-	class TweenEaseBase
+	class NAPAPI TweenEaseBase
 	{
 	public:
 		/**
@@ -78,217 +78,217 @@ namespace nap
 	};
 
 	template<typename T>
-	class TweenEaseLinear : public TweenEaseBase<T>
+	class NAPAPI TweenEaseLinear : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseInCubic : public TweenEaseBase<T>
+	class NAPAPI TweenEaseInCubic : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseInOutCubic : public TweenEaseBase<T>
+	class NAPAPI TweenEaseInOutCubic : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseOutCubic : public TweenEaseBase<T>
+	class NAPAPI TweenEaseOutCubic : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseInBack : public TweenEaseBase<T>
+	class NAPAPI TweenEaseInBack : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseInOutBack : public TweenEaseBase<T>
+	class NAPAPI TweenEaseInOutBack : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseOutBack : public TweenEaseBase<T>
+	class NAPAPI TweenEaseOutBack : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseInBounce : public TweenEaseBase<T>
+	class NAPAPI TweenEaseInBounce : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseInOutBounce : public TweenEaseBase<T>
+	class NAPAPI TweenEaseInOutBounce : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseOutBounce : public TweenEaseBase<T>
+	class NAPAPI TweenEaseOutBounce : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseInCirc : public TweenEaseBase<T>
+	class NAPAPI TweenEaseInCirc : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseInOutCirc : public TweenEaseBase<T>
+	class NAPAPI TweenEaseInOutCirc : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseOutCirc : public TweenEaseBase<T>
+	class NAPAPI TweenEaseOutCirc : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseInElastic : public TweenEaseBase<T>
+	class NAPAPI TweenEaseInElastic : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseInOutElastic : public TweenEaseBase<T>
+	class NAPAPI TweenEaseInOutElastic : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseOutElastic : public TweenEaseBase<T>
+	class NAPAPI TweenEaseOutElastic : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseInExpo : public TweenEaseBase<T>
+	class NAPAPI TweenEaseInExpo : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseInOutExpo : public TweenEaseBase<T>
+	class NAPAPI TweenEaseInOutExpo : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseOutExpo : public TweenEaseBase<T>
+	class NAPAPI TweenEaseOutExpo : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseInQuad : public TweenEaseBase<T>
+	class NAPAPI TweenEaseInQuad : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseInOutQuad : public TweenEaseBase<T>
+	class NAPAPI TweenEaseInOutQuad : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseOutQuad : public TweenEaseBase<T>
+	class NAPAPI TweenEaseOutQuad : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseInQuart : public TweenEaseBase<T>
+	class NAPAPI TweenEaseInQuart : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseInOutQuart : public TweenEaseBase<T>
+	class NAPAPI TweenEaseInOutQuart : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseOutQuart : public TweenEaseBase<T>
+	class NAPAPI TweenEaseOutQuart : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseInQuint : public TweenEaseBase<T>
+	class NAPAPI TweenEaseInQuint : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseInOutQuint : public TweenEaseBase<T>
+	class NAPAPI TweenEaseInOutQuint : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseOutQuint : public TweenEaseBase<T>
+	class NAPAPI TweenEaseOutQuint : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseInSine : public TweenEaseBase<T>
+	class NAPAPI TweenEaseInSine : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseInOutSine : public TweenEaseBase<T>
+	class NAPAPI TweenEaseInOutSine : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;
 	};
 
 	template<typename T>
-	class TweenEaseOutSine : public TweenEaseBase<T>
+	class NAPAPI TweenEaseOutSine : public TweenEaseBase<T>
 	{
 	public:
 		T evaluate(T& start, T& end, float progress) override;

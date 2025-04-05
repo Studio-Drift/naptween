@@ -7,7 +7,6 @@
 // External Includes
 #include <nap/service.h>
 #include <rtti/factory.h>
-#include <concurrentqueue.h>
 
 // local includes
 #include "tweeneasing.h"
@@ -55,13 +54,6 @@ namespace nap
 		template<typename T>
 		std::unique_ptr<TweenHandle<T>> createTween(T startValue, T endValue, float duration);
 	protected:
-
-		/**
-		 * registers all objects that need a specific way of construction
-		 * @param factory the factory to register the object creators with
-		 */
-		virtual void registerObjectCreators(rtti::Factory& factory) override;
-
 		/**
 		 * initializes service
 		 * @param errorState contains any errors
@@ -90,7 +82,7 @@ namespace nap
 		std::vector<std::unique_ptr<TweenBase>> mTweens;
 
 		// vector holding tweens that need to be removed
-		moodycamel::ConcurrentQueue<TweenBase*> mTweensToRemove;
+		std::queue<TweenBase*> mTweensToRemove;
 
         // used to check if tween is created on main thread
         std::thread::id mMainThreadId;
@@ -104,7 +96,7 @@ namespace nap
 	std::unique_ptr<TweenHandle<T>> TweenService::createTween(T startValue, T endValue, float duration)
 	{
         // check if called from main thread
-        assert(std::this_thread::get_id() == mMainThreadId);
+        assert(std::this_thread::get_id() == mMainThreadId); // ensure this is called from the main thread
 
 		// construct tween
 		std::unique_ptr<Tween<T>> tween = std::make_unique<Tween<T>>(startValue, endValue, duration);

@@ -24,6 +24,7 @@ namespace nap
 	 */
 	class NAPAPI TweenHandleBase
 	{
+    RTTI_ENABLE()
 	public:
 		/**
 		 * Deconstructor
@@ -51,6 +52,7 @@ namespace nap
 	template<typename T>
 	class NAPAPI TweenHandle : public TweenHandleBase
 	{
+    RTTI_ENABLE(TweenHandleBase)
 	public:
 		/**
 		 * Constructor, needs reference to TweenService and pointer to corresponding tween
